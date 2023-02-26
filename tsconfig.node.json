@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "incremental": true,
+    "jsx": "react-jsx",
+    "target": "esnext",
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": { "~frontend/*": ["*"] },
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "sourceMap": true,
+    "alwaysStrict": true,
+    "module": "NodeNext",
+    "moduleResolution": "node",
+    "noEmit": true
+  },
+  "ts-node": {
+    "transpileOnly": true,
+    "require": [
+      "typescript-transform-paths/register",
+      "tsconfig-paths/register"
+    ]
+  },
+  "include": ["."],
+  "exclude": ["node_modules"]
+}

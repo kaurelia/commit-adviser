@@ -1,5 +1,23 @@
+import { MantineProvider } from "@mantine/core";
 import type { AppProps } from "next/app";
+import { QueryClient, QueryClientProvider } from "react-query";
 
-export default function App({ Component, pageProps }: AppProps) {
-  return <Component {...pageProps} />;
-}
+const queryClient = new QueryClient();
+
+const App = ({ Component, pageProps }: AppProps) => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <MantineProvider
+        withGlobalStyles
+        withNormalizeCSS
+        theme={{
+          colorScheme: "light",
+        }}
+      >
+        <Component {...pageProps} />
+      </MantineProvider>
+    </QueryClientProvider>
+  );
+};
+
+export default App;

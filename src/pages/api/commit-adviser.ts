@@ -1,36 +1,67 @@
-import { Server } from "http";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { Configuration, OpenAIApi } from "openai";
 
-type CommitShortenerResponse =
+export type CommitShortenerResponse =
   | {
       commitAdvice: string;
     }
   | undefined;
 
+export enum Tenses {
+  PastSimple = "past simple",
+  PresentSimple = "present simple",
+}
+type CommitShortenerPayload = Omit<NextApiRequest, "body"> & {
+  body: {
+    commitMessage: string;
+    taskName?: string;
+    isTaskNamePrefixed?: boolean;
+    tense: Tenses;
+  };
+};
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
 });
 const openai = new OpenAIApi(configuration);
 
 const commitShortenerHandler = async (
-  request: NextApiRequest,
-  response: NextApiResponse<CommitShortenerResponse>
+  request: CommitShortenerPayload,
+  response: NextApiResponse<CommitShortenerResponse>,
 ) => {
   if (request.method === "POST") {
-    const trimmedCommitMessage: string = request.body.commitMessage.trim();
+    const trimmedCommitMessage = request.body.commitMessage.trim();
+    const trimmedTaskName = request.body?.taskName?.trim();
+    const { isTaskNamePrefixed, tense = Tenses.PastSimple } = request.body;
     if (!trimmedCommitMessage.length) {
       response.status(400).send(undefined);
       return;
     }
-    const promptMessage = `Commit content start after colon sign. Improve that commit message to be clear, and have all commit rules satisfies: ${trimmedCommitMessage}`;
-    const completion = await openai.createCompletion({
-      model: "text-davinci-003",
-      prompt: promptMessage,
-    });
+
+    const promptMessage = `Commit content start after colon sign. Improve that commit message to be clear, written in ${tense}, and have all commit rules satisfies: "${trimmedCommitMessage}"`;
+    let completion: Awaited<ReturnType<typeof openai.createCompletion>> | null =
+      null;
+    try {
+      completion = await openai.createCompletion({
+        model: "text-davinci-003",
+        prompt: promptMessage,
+      });
+    } catch {
+      response.status(500).send(undefined);
+      return;
+    }
+
+    const formattedAnswer = () => {
+      if (trimmedTaskName) {
+        if (isTaskNamePrefixed) {
+          return `${completion?.data.choices[0].text} ${trimmedTaskName}`;
+        }
+        return `${trimmedTaskName} ${completion?.data.choices[0].text}`;
+      }
+      return completion?.data.choices[0].text;
+    };
+
     response.status(200).json({
-      commitAdvice:
-        completion.data.choices[0].text || "I don't have any idea 🧐",
+      commitAdvice: formattedAnswer() || "I don't have any idea 🧐",
     });
     return;
   }

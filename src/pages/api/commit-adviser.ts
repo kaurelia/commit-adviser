@@ -38,12 +38,13 @@ const commitShortenerHandler = async (
     }
 
     const promptMessage = `Commit content start after colon sign. Improve that commit message to be clear, written in ${tense}, and have all commit rules satisfies: "${trimmedCommitMessage}"`;
-    let completion: Awaited<ReturnType<typeof openai.createCompletion>> | null =
-      null;
+    let completion: Awaited<
+      ReturnType<typeof openai.createChatCompletion>
+    > | null = null;
     try {
-      completion = await openai.createCompletion({
-        model: "text-davinci-003",
-        prompt: promptMessage,
+      completion = await openai.createChatCompletion({
+        model: "gpt-3.5-turbo",
+        messages: [{ role: "user", content: promptMessage }],
       });
     } catch {
       response.status(500).send(undefined);
@@ -53,11 +54,11 @@ const commitShortenerHandler = async (
     const formattedAnswer = () => {
       if (trimmedTaskName) {
         if (isTaskNamePrefixed) {
-          return `${completion?.data.choices[0].text} ${trimmedTaskName}`;
+          return `${completion?.data.choices[0].message?.content} ${trimmedTaskName}`;
         }
-        return `${trimmedTaskName} ${completion?.data.choices[0].text}`;
+        return `${trimmedTaskName} ${completion?.data.choices[0].message?.content}`;
       }
-      return completion?.data.choices[0].text;
+      return completion?.data.choices[0].message?.content;
     };
 
     response.status(200).json({
